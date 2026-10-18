@@ -1,5 +1,6 @@
 import json
 import sys
+from enum import IntEnum
 from typing import Dict, List, Mapping, Sequence, Set, Tuple, Union
 
 from ollama._utils import convert_function_to_tool
@@ -7,6 +8,21 @@ from ollama._utils import convert_function_to_tool
 
 def test_function_defaults_are_not_required():
   def search(query: str, limit: int = 5):
+    return query, limit
+
+  parameters = convert_function_to_tool(search).function.parameters
+  assert parameters.required == ['query']
+  assert parameters.properties['limit'].type == 'integer'
+
+
+def test_function_default_with_custom_comparison():
+  class DefaultLimit(IntEnum):
+    FIVE = 5
+
+    def __ne__(self, other):
+      raise RuntimeError('Default value comparison is not supported')
+
+  def search(query: str, limit: int = DefaultLimit.FIVE):
     return query, limit
 
   parameters = convert_function_to_tool(search).function.parameters
